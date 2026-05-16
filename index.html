@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="description" content="FinFlow — Controle financeiro profissional com inteligência analítica" />
+  <title>FinFlow — Dashboard Financeiro</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">⬡</span>
+      <span class="brand-name">FinFlow</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">◈</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-view="transactions">
+        <span class="nav-icon">⇄</span>
+        <span>Transações</span>
+      </a>
+      <a href="#" class="nav-item" data-view="categories">
+        <span class="nav-icon">◉</span>
+        <span>Categorias</span>
+      </a>
+      <a href="#" class="nav-item" data-view="goals">
+        <span class="nav-icon">◎</span>
+        <span>Metas</span>
+      </a>
+      <a href="#" class="nav-item" data-view="forecast">
+        <span class="nav-icon">↗</span>
+        <span>Projeções</span>
+      </a>
+      <a href="#" class="nav-item" data-view="alerts">
+        <span class="nav-icon">◬</span>
+        <span>Alertas</span>
+        <span class="badge" id="alert-badge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-add-tx" id="btn-open-modal">
+        <span>+</span> Nova Transação
+      </button>
+      <div class="period-selector">
+        <label>Período</label>
+        <select id="period-select">
+          <option value="current">Mês Atual</option>
+          <option value="last">Mês Anterior</option>
+          <option value="quarter">Último Trimestre</option>
+          <option value="year">Ano Corrente</option>
+          <option value="all">Todo Período</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="topbar-title" id="view-title">Dashboard Executivo</div>
+      <div class="topbar-right">
+        <div class="date-display" id="date-display"></div>
+        <div class="health-indicator" id="health-indicator" title="Saúde financeira">
+          <span class="health-dot"></span>
+          <span class="health-label">Saudável</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEWS -->
+    <div class="view active" id="view-dashboard">
+
+      <!-- KPI STRIP -->
+      <section class="kpi-strip">
+        <div class="kpi-card primary">
+          <div class="kpi-label">Saldo Líquido</div>
+          <div class="kpi-value" id="kpi-saldo">R$ 0,00</div>
+          <div class="kpi-delta" id="kpi-saldo-delta">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Receitas do Período</div>
+          <div class="kpi-value positive" id="kpi-receitas">R$ 0,00</div>
+          <div class="kpi-delta" id="kpi-receitas-delta">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Despesas do Período</div>
+          <div class="kpi-value negative" id="kpi-despesas">R$ 0,00</div>
+          <div class="kpi-delta" id="kpi-despesas-delta">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Burn Rate Mensal</div>
+          <div class="kpi-value" id="kpi-burnrate">R$ 0,00</div>
+          <div class="kpi-delta" id="kpi-burnrate-sub">média 12m</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Taxa de Poupança</div>
+          <div class="kpi-value" id="kpi-savings-rate">0,0%</div>
+          <div class="kpi-delta" id="kpi-savings-sub">do total de receitas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Runway Estimado</div>
+          <div class="kpi-value" id="kpi-runway">— meses</div>
+          <div class="kpi-delta">com o saldo atual</div>
+        </div>
+      </section>
+
+      <!-- CHARTS ROW -->
+      <section class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <span class="chart-title">Fluxo de Caixa — Últimos 6 Meses</span>
+            <span class="chart-legend">
+              <span class="leg-dot positive"></span> Receitas
+              <span class="leg-dot negative"></span> Despesas
+            </span>
+          </div>
+          <canvas id="cashflow-chart" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Despesas por Categoria</span>
+          </div>
+          <canvas id="category-chart" height="200"></canvas>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </section>
+
+      <!-- BOTTOM ROW -->
+      <section class="bottom-row">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Últimas Transações</span>
+            <a href="#" class="panel-link" data-view="transactions">Ver todas →</a>
+          </div>
+          <div class="tx-list" id="recent-tx-list">
+            <div class="empty-state">Nenhuma transação registrada</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Metas Ativas</span>
+            <a href="#" class="panel-link" data-view="goals">Gerenciar →</a>
+          </div>
+          <div class="goals-list" id="dash-goals-list">
+            <div class="empty-state">Nenhuma meta cadastrada</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Análise de Risco</span>
+          </div>
+          <div class="risk-panel" id="risk-panel">
+            <div class="risk-item">
+              <span class="risk-label">Concentração de receita</span>
+              <div class="risk-bar-wrap"><div class="risk-bar" id="risk-concentration" style="width:0%"></div></div>
+              <span class="risk-val" id="risk-conc-val">—</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-label">Despesas fixas / receita</span>
+              <div class="risk-bar-wrap"><div class="risk-bar" id="risk-fixed" style="width:0%"></div></div>
+              <span class="risk-val" id="risk-fixed-val">—</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-label">Volatilidade de receita</span>
+              <div class="risk-bar-wrap"><div class="risk-bar" id="risk-vol" style="width:0%"></div></div>
+              <span class="risk-val" id="risk-vol-val">—</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-label">Burn rate vs. receita média</span>
+              <div class="risk-bar-wrap"><div class="risk-bar" id="risk-burn" style="width:0%"></div></div>
+              <span class="risk-val" id="risk-burn-val">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TRANSACTIONS VIEW -->
+    <div class="view" id="view-transactions">
+      <div class="view-toolbar">
+        <div class="filter-group">
+          <select id="filter-type">
+            <option value="all">Todos os Tipos</option>
+            <option value="income">Receitas</option>
+            <option value="expense">Despesas</option>
+          </select>
+          <select id="filter-cat">
+            <option value="all">Todas as Categorias</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="Buscar descrição..." />
+        </div>
+        <button class="btn-primary" id="btn-open-modal-2">+ Nova Transação</button>
+      </div>
+
+      <div class="tx-table-wrap">
+        <table class="tx-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Tipo</th>
+              <th class="text-right">Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tx-table-body">
+            <tr><td colspan="6" class="empty-state">Nenhuma transação</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CATEGORIES VIEW -->
+    <div class="view" id="view-categories">
+      <div class="view-toolbar">
+        <button class="btn-primary" id="btn-add-category">+ Nova Categoria</button>
+      </div>
+      <div class="categories-grid" id="categories-grid">
+        <div class="empty-state">Nenhuma categoria criada</div>
+      </div>
+    </div>
+
+    <!-- GOALS VIEW -->
+    <div class="view" id="view-goals">
+      <div class="view-toolbar">
+        <button class="btn-primary" id="btn-add-goal">+ Nova Meta</button>
+      </div>
+      <div class="goals-grid" id="goals-grid">
+        <div class="empty-state">Nenhuma meta cadastrada</div>
+      </div>
+    </div>
+
+    <!-- FORECAST VIEW -->
+    <div class="view" id="view-forecast">
+      <section class="forecast-summary">
+        <div class="forecast-card">
+          <div class="fc-label">Projeção Receita (próx. 3m)</div>
+          <div class="fc-value positive" id="fc-income">R$ 0,00</div>
+        </div>
+        <div class="forecast-card">
+          <div class="fc-label">Projeção Despesa (próx. 3m)</div>
+          <div class="fc-value negative" id="fc-expense">R$ 0,00</div>
+        </div>
+        <div class="forecast-card">
+          <div class="fc-label">Saldo Projetado</div>
+          <div class="fc-value" id="fc-balance">R$ 0,00</div>
+        </div>
+        <div class="forecast-card">
+          <div class="fc-label">Crescimento Esperado</div>
+          <div class="fc-value" id="fc-growth">0,0%</div>
+        </div>
+      </section>
+      <div class="chart-card" style="margin-top:1.5rem;">
+        <div class="chart-header"><span class="chart-title">Projeção de Saldo — Próximos 6 Meses</span></div>
+        <canvas id="forecast-chart" height="220"></canvas>
+      </div>
+      <div class="forecast-insights" id="forecast-insights"></div>
+    </div>
+
+    <!-- ALERTS VIEW -->
+    <div class="view" id="view-alerts">
+      <div class="view-toolbar">
+        <button class="btn-primary" id="btn-add-alert">+ Novo Alerta</button>
+      </div>
+      <div class="alerts-list" id="alerts-list">
+        <div class="empty-state">Nenhum alerta configurado</div>
+      </div>
+      <div class="active-alerts" id="active-alerts-section" style="margin-top:2rem;display:none">
+        <h3 class="section-title">Alertas Disparados</h3>
+        <div id="active-alerts-list"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TRANSACTION MODAL -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-tx-title">Nova Transação</span>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="tx-edit-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <div class="type-toggle">
+              <button class="type-btn active" data-type="expense">Despesa</button>
+              <button class="type-btn" data-type="income">Receita</button>
+            </div>
+            <input type="hidden" id="tx-type" value="expense" />
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="tx-date" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descrição</label>
+          <input type="text" id="tx-description" placeholder="Ex: Aluguel, Salário, Supermercado..." />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="tx-amount" placeholder="0,00" step="0.01" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select id="tx-category"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Observações</label>
+          <input type="text" id="tx-notes" placeholder="Opcional..." />
+        </div>
+        <div class="form-check">
+          <input type="checkbox" id="tx-fixed" />
+          <label for="tx-fixed">Despesa/Receita Fixa (recorrente)</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="modal-cancel">Cancelar</button>
+        <button class="btn-primary" id="modal-save">Salvar Transação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATEGORY MODAL -->
+  <div class="modal-overlay" id="cat-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Nova Categoria</span>
+        <button class="modal-close" id="cat-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cat-edit-id" />
+        <div class="form-group">
+          <label>Nome da Categoria</label>
+          <input type="text" id="cat-name" placeholder="Ex: Alimentação, Moradia..." />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="cat-type">
+              <option value="expense">Despesa</option>
+              <option value="income">Receita</option>
+              <option value="both">Ambos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cor</label>
+            <input type="color" id="cat-color" value="#4ade80" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Orçamento Mensal (R$) — opcional</label>
+          <input type="number" id="cat-budget" placeholder="0,00" step="0.01" min="0" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="cat-modal-cancel">Cancelar</button>
+        <button class="btn-primary" id="cat-modal-save">Salvar Categoria</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOAL MODAL -->
+  <div class="modal-overlay" id="goal-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Nova Meta Financeira</span>
+        <button class="modal-close" id="goal-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="goal-edit-id" />
+        <div class="form-group">
+          <label>Nome da Meta</label>
+          <input type="text" id="goal-name" placeholder="Ex: Reserva de Emergência, Viagem..." />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valor Alvo (R$)</label>
+            <input type="number" id="goal-target" placeholder="0,00" step="0.01" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Valor Atual (R$)</label>
+            <input type="number" id="goal-current" placeholder="0,00" step="0.01" min="0" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prazo</label>
+            <input type="date" id="goal-deadline" />
+          </div>
+          <div class="form-group">
+            <label>Prioridade</label>
+            <select id="goal-priority">
+              <option value="high">Alta</option>
+              <option value="medium" selected>Média</option>
+              <option value="low">Baixa</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="goal-modal-cancel">Cancelar</button>
+        <button class="btn-primary" id="goal-modal-save">Salvar Meta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERT MODAL -->
+  <div class="modal-overlay" id="alert-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Configurar Alerta</span>
+        <button class="modal-close" id="alert-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tipo de Alerta</label>
+          <select id="alert-type">
+            <option value="saldo_min">Saldo mínimo abaixo de</option>
+            <option value="despesa_cat">Despesas na categoria acima de</option>
+            <option value="burnrate">Burn rate acima de</option>
+            <option value="savings_rate">Taxa de poupança abaixo de</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Limite / Valor</label>
+            <input type="number" id="alert-threshold" placeholder="0,00" step="0.01" />
+          </div>
+          <div class="form-group" id="alert-cat-group">
+            <label>Categoria (se aplicável)</label>
+            <select id="alert-cat"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nome / Descrição</label>
+          <input type="text" id="alert-name" placeholder="Ex: Saldo de emergência mínimo" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="alert-modal-cancel">Cancelar</button>
+        <button class="btn-primary" id="alert-modal-save">Salvar Alerta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
